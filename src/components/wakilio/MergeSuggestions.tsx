@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useMemo, useState } from "react";
 import { Sparkles, GitMerge, X } from "lucide-react";
 import { suggestMerges, type AgentSummary } from "@/lib/wakilio/engine";
@@ -22,7 +23,7 @@ export function MergeSuggestions({
   const count = (n: string) => agents.find((a) => a.name === n)?.passports ?? 0;
 
   return (
-    <div className="rounded-3xl border border-border bg-card p-5">
+    <div className="suggestions-panel">
       <div className="mb-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="grid h-9 w-9 place-items-center rounded-xl bg-chart-3/15 text-chart-3">
@@ -30,10 +31,10 @@ export function MergeSuggestions({
           </div>
           <div>
             <div className="font-display font-bold">صندوق الاقتراحات</div>
-            <div className="text-xs text-muted-foreground">أسماء وكلاء متشابهة قد تكون لنفس الشخص</div>
+            <div className="text-xs text-muted-foreground">مراجعة المطابقات</div>
           </div>
         </div>
-        <span className="num rounded-full bg-chart-3/15 px-2.5 py-1 text-xs font-bold text-chart-3">{sugg.length}</span>
+        <span className="num rounded-[11px] bg-chart-3/15 px-2.5 py-1 text-xs font-bold text-chart-3">{sugg.length}</span>
       </div>
       <label className="mb-3 flex items-center gap-3 text-xs text-muted-foreground">
         دقة التشابه
@@ -45,22 +46,22 @@ export function MergeSuggestions({
         {sugg.map((s) => {
           const [keep, drop] = count(s.a) >= count(s.b) ? [s.a, s.b] : [s.b, s.a];
           return (
-            <div key={s.a + s.b} className="rounded-2xl border border-border bg-secondary/60 p-3">
+            <div key={s.a + s.b} className="rounded-[13px] border border-border bg-secondary/60 p-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="font-semibold">{drop}</span>
                 <span className="num text-xs text-chart-3">{Math.round(s.score * 100)}%</span>
                 <span className="font-semibold">{keep}</span>
               </div>
               <div className="mt-2 flex gap-2">
-                <button onClick={() => onMerge(drop, keep)} className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-primary/15 py-1.5 text-xs font-bold text-primary hover:bg-primary/25">
+                <Button variant="ghost" onClick={() => onMerge(drop, keep)} className="flex flex-1 items-center justify-center gap-1.5 rounded-[11px] bg-primary/15 py-1.5 text-xs font-bold text-primary hover:bg-primary/25">
                   <GitMerge className="h-3.5 w-3.5" /> دمج في «{keep}»
-                </button>
-                <button onClick={() => onMerge(keep, drop)} className="rounded-full border border-border px-3 py-1.5 text-xs hover:border-primary/50">
+                </Button>
+                <Button variant="ghost" onClick={() => onMerge(keep, drop)} className="rounded-[11px] border border-border px-3 py-1.5 text-xs hover:border-primary/50">
                   العكس
-                </button>
-                <button onClick={() => onDismiss(`${s.a}|${s.b}`)} aria-label="تجاهل" className="rounded-full border border-border px-2.5 hover:border-destructive/60">
+                </Button>
+                <Button variant="ghost" onClick={() => onDismiss(`${s.a}|${s.b}`)} aria-label="تجاهل" className="rounded-[11px] border border-border px-2.5 hover:border-destructive/60">
                   <X className="h-3.5 w-3.5" />
-                </button>
+                </Button>
               </div>
             </div>
           );
