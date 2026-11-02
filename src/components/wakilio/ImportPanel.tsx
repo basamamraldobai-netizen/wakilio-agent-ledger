@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
 import { FileSpreadsheet, Upload, Check } from "lucide-react";
@@ -46,8 +47,10 @@ export function ImportPanel({ onImport }: { onImport: (recs: TxRecord[], file: s
     const XLSX = await import("xlsx");
     const wb = XLSX.read(await f.arrayBuffer(), { cellDates: true });
     const sheets: Record<string, Grid> = {};
-    for (const n of wb.SheetNames)
-      sheets[n] = XLSX.utils.sheet_to_json(wb.Sheets[n]!, { header: 1, defval: "", raw: true }) as Grid;
+    for (const n of wb.SheetNames) {
+      const sheet = wb.Sheets[n];
+      if (sheet) sheets[n] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: true }) as Grid;
+    }
     setP(prepare(f.name, sheets, wb.SheetNames[0] ?? ""));
   }
 
@@ -62,15 +65,13 @@ export function ImportPanel({ onImport }: { onImport: (recs: TxRecord[], file: s
           const f = e.dataTransfer.files[0];
           if (f) readFile(f).catch(() => toast.error("تعذر قراءة الملف"));
         }}
-        className={`flex cursor-pointer flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed p-12 text-center transition ${drag ? "border-primary bg-primary/10" : "border-border bg-card/60 hover:border-primary/60"}`}
+        className={`flex cursor-pointer flex-col items-center justify-center gap-4 rounded-[18px] border border-dashed px-5 py-12 text-center transition ${drag ? "border-primary bg-primary/10" : "border-primary/40 bg-primary/5 hover:border-primary/60"}`}
       >
-        <div className="grid h-16 w-16 place-items-center rounded-2xl bg-primary/10 text-primary">
+        <div className="grid h-16 w-16 place-items-center rounded-[13px] bg-primary/10 text-primary">
           <Upload className="h-7 w-7" />
         </div>
         <div className="font-display text-lg font-bold">اسحب ملف الإكسل هنا أو اضغط للاختيار</div>
-        <p className="max-w-md text-sm text-muted-foreground">
-          يدعم الملفات التي تحتوي عمود الوكيل، والملفات التي يكون اسم الوكيل فيها في الترويسة العلوية.
-        </p>
+        <p className="text-xs text-muted-foreground num" dir="ltr">XLSX · XLS · CSV</p>
         <input
           type="file"
           accept=".xlsx,.xls,.csv"
@@ -90,7 +91,7 @@ export function ImportPanel({ onImport }: { onImport: (recs: TxRecord[], file: s
   const records = buildRecords({ grid, headerRow: p.headerRow, roles: p.roles, fixedAgent: p.fixedAgent, file: p.file, sheet: p.sheet });
 
   return (
-    <div className="space-y-5 rounded-3xl border border-border bg-card p-6">
+    <div className="space-y-5 import-mapping">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <FileSpreadsheet className="h-6 w-6 text-primary" />
@@ -104,14 +105,14 @@ export function ImportPanel({ onImport }: { onImport: (recs: TxRecord[], file: s
             <select
               value={p.sheet}
               onChange={(e) => setP(prepare(p.file, p.sheets, e.target.value))}
-              className="rounded-full border border-input bg-secondary px-4 py-2 text-sm"
+              className="rounded-[11px] border border-input bg-secondary px-4 py-2 text-sm"
             >
               {Object.keys(p.sheets).map((s) => (
                 <option key={s}>{s}</option>
               ))}
             </select>
           )}
-          <label className="flex items-center gap-2 rounded-full border border-input bg-secondary px-4 py-2 text-sm">
+          <label className="flex items-center gap-2 rounded-[11px] border border-input bg-secondary px-4 py-2 text-sm">
             صف العناوين
             <input
               type="number"
@@ -128,7 +129,7 @@ export function ImportPanel({ onImport }: { onImport: (recs: TxRecord[], file: s
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-secondary/50 p-4">
+      <div className="border-b border-border pb-5">
         <label className="block text-sm font-semibold">
           {hasAgentCol ? "وكيل افتراضي للصفوف الفارغة (اختياري)" : "اسم الوكيل لكل الحركات (من الترويسة)"}
         </label>
@@ -143,8 +144,8 @@ export function ImportPanel({ onImport }: { onImport: (recs: TxRecord[], file: s
         )}
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-border">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-[13px] border border-border">
+        <table className="wakilio-table mapping-table">
           <thead>
             <tr className="bg-secondary">
               {p.roles.map((role, i) => (
@@ -190,20 +191,19 @@ export function ImportPanel({ onImport }: { onImport: (recs: TxRecord[], file: s
           {!p.roles.includes("passport") && <span className="text-destructive"> — حدّد عمود اسم الجواز</span>}
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setP(null)} className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold hover:border-primary/50">
+          <Button variant="ghost" onClick={() => setP(null)} className="rounded-[11px] border border-border px-5 py-2.5 text-sm font-semibold hover:border-primary/50">
             إلغاء
-          </button>
-          <button
+          </Button>
+          <Button variant="wakilio"
             disabled={!records.length}
             onClick={() => {
               onImport(records, p.file);
               setP(null);
             }}
-            className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-primary-foreground shadow-[var(--glow)] disabled:opacity-40"
-            style={{ backgroundImage: "var(--gradient-primary)" }}
+            className="inline-flex items-center gap-2 rounded-[11px] px-6 py-2.5 text-sm font-bold text-primary-foreground shadow-[var(--glow)] disabled:opacity-40"
           >
             <Check className="h-4 w-4" /> اعتماد الاستيراد
-          </button>
+          </Button>
         </div>
       </div>
     </div>
