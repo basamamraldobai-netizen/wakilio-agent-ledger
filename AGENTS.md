@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Excel import/matching logic lives in pure functions in src/lib/wakilio/engine.ts (tested); UI in src/components/wakilio. Data is kept in browser localStorage for now — no backend yet.
