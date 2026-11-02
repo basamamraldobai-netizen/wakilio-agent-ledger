@@ -23,7 +23,7 @@ type Pending = {
 };
 
 function prepare(file: string, sheets: Record<string, Grid>, sheet: string): Pending {
-  const grid = sheets[sheet];
+  const grid = sheets[sheet] ?? [];
   const headerRow = detectHeaderRow(grid);
   const header = grid[headerRow] ?? [];
   const width = Math.max(...grid.slice(headerRow, headerRow + 30).map((r) => r.length), header.length);
@@ -47,8 +47,8 @@ export function ImportPanel({ onImport }: { onImport: (recs: TxRecord[], file: s
     const wb = XLSX.read(await f.arrayBuffer(), { cellDates: true });
     const sheets: Record<string, Grid> = {};
     for (const n of wb.SheetNames)
-      sheets[n] = XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, defval: "", raw: true }) as Grid;
-    setP(prepare(f.name, sheets, wb.SheetNames[0]));
+      sheets[n] = XLSX.utils.sheet_to_json(wb.Sheets[n]!, { header: 1, defval: "", raw: true }) as Grid;
+    setP(prepare(f.name, sheets, wb.SheetNames[0] ?? ""));
   }
 
   if (!p)
@@ -84,7 +84,7 @@ export function ImportPanel({ onImport }: { onImport: (recs: TxRecord[], file: s
       </label>
     );
 
-  const grid = p.sheets[p.sheet];
+  const grid = p.sheets[p.sheet] ?? [];
   const preview = grid.slice(p.headerRow + 1, p.headerRow + 7);
   const hasAgentCol = p.roles.includes("agent");
   const records = buildRecords({ grid, headerRow: p.headerRow, roles: p.roles, fixedAgent: p.fixedAgent, file: p.file, sheet: p.sheet });

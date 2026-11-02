@@ -99,7 +99,7 @@ export function detectHeaderRow(grid: Grid): number {
 export function detectTitleAgent(grid: Grid, headerRow: number): string {
   for (let i = headerRow - 1; i >= 0; i--) {
     const cells = (grid[i] ?? []).map(normalizeText).filter(Boolean);
-    if (cells.length === 1 && isNaN(Number(cells[0]))) return cells[0];
+    if (cells.length === 1 && isNaN(Number(cells[0]))) return cells[0]!;
   }
   return "";
 }
@@ -174,15 +174,15 @@ export function buildRecords(opts: {
 function levenshtein(a: string, b: string): number {
   const dp = Array.from({ length: b.length + 1 }, (_, i) => i);
   for (let i = 1; i <= a.length; i++) {
-    let prev = dp[0];
+    let prev = dp[0]!;
     dp[0] = i;
     for (let j = 1; j <= b.length; j++) {
-      const tmp = dp[j];
-      dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+      const tmp = dp[j]!;
+      dp[j] = Math.min(dp[j]! + 1, dp[j - 1]! + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
       prev = tmp;
     }
   }
-  return dp[b.length];
+  return dp[b.length]!;
 }
 
 export function similarity(a: string, b: string): number {
@@ -200,8 +200,9 @@ export function suggestMerges(names: string[], threshold = 0.8): MergeSuggestion
   const out: MergeSuggestion[] = [];
   for (let i = 0; i < names.length; i++)
     for (let j = i + 1; j < names.length; j++) {
-      const s = similarity(names[i], names[j]);
-      if (s >= threshold) out.push({ a: names[i], b: names[j], score: s });
+      const a = names[i]!, b = names[j]!;
+      const s = similarity(a, b);
+      if (s >= threshold) out.push({ a, b, score: s });
     }
   return out.sort((p, q) => q.score - p.score);
 }
@@ -221,7 +222,7 @@ export function resolveAgent(raw: string, aliases: Record<string, string>): stri
   const seen = new Set<string>();
   while (aliases[n] && !seen.has(n)) {
     seen.add(n);
-    n = aliases[n];
+    n = aliases[n]!;
   }
   return n;
 }

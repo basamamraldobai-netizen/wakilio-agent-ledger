@@ -19,10 +19,10 @@ describe("engine", () => {
     const h = detectHeaderRow(grid);
     expect(h).toBe(1);
     expect(detectTitleAgent(grid, h)).toBe("خالد عباس");
-    const roles = grid[h].map((c) => guessRole(String(c)));
+    const roles = grid[h]!.map((c) => guessRole(String(c)));
     const recs = buildRecords({ grid, headerRow: h, roles, fixedAgent: "خالد عباس", file: "f", sheet: "s" });
     expect(recs.every((r) => r.agentRaw === "خالد عباس")).toBe(true);
-    const [s] = summarize(recs, {});
+    const s = summarize(recs, {})[0]!;
     expect(s.passports).toBe(2);
     expect(s.paid).toBe(2000);
     expect(s.remaining).toBe(4200);
