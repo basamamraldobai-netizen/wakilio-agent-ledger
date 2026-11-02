@@ -48,7 +48,7 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
         <table className="w-full text-sm">
           <thead className="bg-secondary text-xs text-muted-foreground">
             <tr>
-              {["#", "اسم الجواز", "رقم السند", "التاريخ", "الحالة / الجهة", "الواصل", "المتبقي", "الرصيد التراكمي", "ملاحظات"].map((h) => (
+              {["#", "اسم الجواز", "المهنة", "رقم السند", "التاريخ", "الحالة / الجهة", "الواصل", "المتبقي", "الرصيد التراكمي", "ملاحظات"].map((h) => (
                 <th key={h} className="whitespace-nowrap p-3 text-right font-semibold">{h}</th>
               ))}
             </tr>
@@ -60,6 +60,7 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
                 <tr key={r.id} className="border-t border-border hover:bg-secondary/40">
                   <td className="num p-3 text-muted-foreground">{i + 1}</td>
                   <td className="p-3 font-medium">{r.passport}</td>
+                  <td className="p-3 text-muted-foreground">{r.profession}</td>
                   <td className="num p-3">{r.receipt}</td>
                   <td className="num whitespace-nowrap p-3">{r.date}</td>
                   <td className="p-3 text-muted-foreground">{[r.status, r.destination].filter(Boolean).join(" · ")}</td>
@@ -73,7 +74,7 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
           </tbody>
           <tfoot className="border-t-2 border-primary/40 bg-secondary font-bold">
             <tr>
-              <td colSpan={5} className="p-3">الإجمالي ({fmt(agent.passports)} جواز)</td>
+              <td colSpan={6} className="p-3">الإجمالي ({fmt(agent.passports)} جواز)</td>
               <td className="num p-3 text-primary">{fmt(agent.paid)}</td>
               <td className="num p-3 text-destructive">{fmt(agent.remaining)}</td>
               <td className="num p-3">{fmt(agent.remaining)}</td>

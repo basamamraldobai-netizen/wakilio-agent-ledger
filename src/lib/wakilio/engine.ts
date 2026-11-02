@@ -10,6 +10,7 @@ export type ColumnRole =
   | "date"
   | "status"
   | "destination"
+  | "profession"
   | "notes";
 
 export const ROLE_LABELS: Record<ColumnRole, string> = {
@@ -22,6 +23,7 @@ export const ROLE_LABELS: Record<ColumnRole, string> = {
   date: "التاريخ",
   status: "الحالة",
   destination: "الجهة",
+  profession: "المهنة",
   notes: "ملاحظات",
 };
 
@@ -33,7 +35,8 @@ const ROLE_KEYWORDS: [ColumnRole, string[]][] = [
   ["receipt", ["سند", "رقم"]],
   ["date", ["تاريخ"]],
   ["status", ["حاله", "حالة", "بالنظام"]],
-  ["destination", ["جهه", "جهة", "مهنه", "مهنة"]],
+  ["profession", ["مهنه", "مهنة", "المهنة", "وظيفه", "وظيفة"]],
+  ["destination", ["جهه", "جهة"]],
   ["notes", ["ملاحظ"]],
 ];
 
@@ -116,6 +119,7 @@ export type TxRecord = {
   date: string;
   status: string;
   destination: string;
+  profession: string;
   notes: string;
 };
 
@@ -143,6 +147,7 @@ export function buildRecords(opts: {
     date: col("date"),
     status: col("status"),
     destination: col("destination"),
+    profession: col("profession"),
     notes: col("notes"),
   };
   const get = (row: unknown[], i: number) => (i >= 0 ? row[i] : "");
@@ -165,6 +170,7 @@ export function buildRecords(opts: {
       date: formatDate(get(row, idx.date)),
       status: normalizeText(get(row, idx.status)),
       destination: normalizeText(get(row, idx.destination)),
+      profession: normalizeText(get(row, idx.profession)),
       notes: normalizeText(get(row, idx.notes)),
     });
   }
