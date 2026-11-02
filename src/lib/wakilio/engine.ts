@@ -119,6 +119,7 @@ export type TxRecord = {
   date: string;
   status: string;
   destination: string;
+  profession: string;
   notes: string;
 };
 
@@ -146,6 +147,7 @@ export function buildRecords(opts: {
     date: col("date"),
     status: col("status"),
     destination: col("destination"),
+    profession: col("profession"),
     notes: col("notes"),
   };
   const get = (row: unknown[], i: number) => (i >= 0 ? row[i] : "");
@@ -168,6 +170,7 @@ export function buildRecords(opts: {
       date: formatDate(get(row, idx.date)),
       status: normalizeText(get(row, idx.status)),
       destination: normalizeText(get(row, idx.destination)),
+      profession: normalizeText(get(row, idx.profession)),
       notes: normalizeText(get(row, idx.notes)),
     });
   }
