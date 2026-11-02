@@ -7,7 +7,7 @@ import { AgentStatement, Stat, fmt } from "@/components/wakilio/AgentStatement";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/agents")({
-  validateSearch: (search: Record<string, unknown>): { agent?: string } => ({ agent: typeof search.agent === "string" ? search.agent : undefined }),
+  validateSearch: (search: Record<string, unknown>): { agent?: string } => typeof search["agent"] === "string" ? { agent: search["agent"] } : {},
   head: () => ({ meta: [
     { title: "WAKILIO | حسابات وكشوف الوكلاء" }, { name: "description", content: "حسابات الوكلاء وكشوف الجوازات والمهن والواصل والمتبقي والأسماء المدمجة." },
     { property: "og:title", content: "WAKILIO | حسابات وكشوف الوكلاء" }, { property: "og:description", content: "ملخص مالي وكشف حساب تفصيلي لكل وكيل." },
