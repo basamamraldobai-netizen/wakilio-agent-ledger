@@ -1,165 +1,42 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
-import { Search, Trash2, Users } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo } from "react";
+import { Users, Wallet, CircleCheck, Clock, FileUp, Sparkles, FileSpreadsheet } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { summarize } from "@/lib/wakilio/engine";
-import { useWakilioStore } from "@/components/wakilio/useWakilioStore";
-import { ImportPanel } from "@/components/wakilio/ImportPanel";
-import { MergeSuggestions } from "@/components/wakilio/MergeSuggestions";
-import { AgentStatement, Stat, fmt } from "@/components/wakilio/AgentStatement";
+import { useWakilio } from "@/components/wakilio/WakilioContext";
+import { Stat, fmt } from "@/components/wakilio/AgentStatement";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "WAKILIO | استيراد وتحليل حسابات الوكلاء" },
-      { name: "description", content: "استورد ملفات الإكسل، طابق أسماء الوكلاء، واعرض كشف حساب وملخصاً مالياً لكل وكيل." },
-      { property: "og:title", content: "WAKILIO | استيراد وتحليل حسابات الوكلاء" },
-      { property: "og:description", content: "محرك استيراد ذكي لملفات الوكلاء مع مطابقة الأسماء وكشوف الحساب." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
-  component: Index,
+  head: () => ({ meta: [
+    { title: "WAKILIO | لوحة التحكم" },
+    { name: "description", content: "لوحة التحكم في حسابات الوكلاء والمستحقات والواصل والمتبقي في وكيليو." },
+    { property: "og:title", content: "WAKILIO | لوحة التحكم" },
+    { property: "og:description", content: "ملخص حسابات الوكلاء والحركة المالية من ملفات الإكسل المستوردة." },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
+  ] }), component: Dashboard,
 });
 
-function Index() {
-  const [state, setState] = useWakilioStore();
-  const [selected, setSelected] = useState<string | null>(null);
-  const [q, setQ] = useState("");
+function Dashboard() {
+  const [state] = useWakilio();
   const agents = useMemo(() => summarize(state.records, state.aliases), [state.records, state.aliases]);
-  const totals = useMemo(
-    () => agents.reduce((t, a) => ({ p: t.p + a.passports, paid: t.paid + a.paid, rem: t.rem + a.remaining }), { p: 0, paid: 0, rem: 0 }),
-    [agents],
-  );
-  const files = [...new Set(state.records.map((r) => r.file))];
-  const current = agents.find((a) => a.name === selected);
-  const shown = agents.filter((a) => a.name.includes(q.trim()));
-
-  return (
-    <div className="mx-auto w-[min(1200px,calc(100%-32px))] pb-20">
-      <nav className="flex h-20 items-center justify-between border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-xl font-num text-lg font-extrabold text-primary-foreground shadow-[var(--glow)]" style={{ backgroundImage: "var(--gradient-primary)" }}>W</div>
-          <div className="leading-tight">
-            <div className="font-display text-xl font-extrabold">وكيليو</div>
-            <div className="num text-[9px] font-semibold tracking-[1.3px] opacity-70" dir="ltr">WAKILIO</div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-xs text-primary">
-          <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_10px_var(--primary)]" /> محرك الاستيراد والمطابقة
-        </div>
-      </nav>
-
-      {current ? (
-        <div className="mt-8">
-          <AgentStatement
-            agent={current}
-            onBack={() => setSelected(null)}
-            onUnmerge={(alias) => setState((s) => { const a = { ...s.aliases }; delete a[alias]; return { ...s, aliases: a }; })}
-          />
-        </div>
-      ) : (
-        <>
-          <header className="py-10">
-            <h1 className="font-display text-3xl font-extrabold leading-snug md:text-5xl">
-              استورد، طابق، <span className="text-primary">وحلّل</span> حسابات وكلائك
-            </h1>
-            <p className="mt-3 max-w-2xl leading-loose text-muted-foreground">
-              ارفع أي ملف إكسل، وحدّد الأعمدة بمرونة، وسيقوم وكيليو بتجميع الحركات لكل وكيل مع الواصل والمتبقي.
-            </p>
-          </header>
-
-          <ImportPanel
-            onImport={(recs, file) => {
-              setState((s) => ({ ...s, records: [...s.records.filter((r) => r.file !== file || !recs.some((x) => x.sheet === r.sheet)), ...recs] }));
-              toast.success(`تم استيراد ${recs.length} حركة من ${file}`);
-            }}
-          />
-
-          {agents.length > 0 && (
-            <>
-              <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
-                <Stat label="عدد الوكلاء" value={fmt(agents.length)} />
-                <Stat label="إجمالي الجوازات" value={fmt(totals.p)} tone="text-accent" />
-                <Stat label="إجمالي الواصل" value={fmt(totals.paid)} tone="text-primary" />
-                <Stat label="إجمالي المتبقي" value={fmt(totals.rem)} tone="text-destructive" />
-              </div>
-
-              <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_340px]">
-                <div className="rounded-3xl border border-border bg-card p-5">
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 font-display font-bold">
-                      <Users className="h-5 w-5 text-primary" /> الوكلاء
-                    </div>
-                    <div className="flex items-center gap-2 rounded-full border border-input bg-background px-3 py-1.5">
-                      <Search className="h-4 w-4 text-muted-foreground" />
-                      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="بحث عن وكيل" className="w-40 bg-transparent text-sm outline-none" />
-                    </div>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="text-xs text-muted-foreground">
-                        <tr>
-                          {["الوكيل", "الجوازات", "الواصل", "المتبقي", "نسبة السداد"].map((h) => (
-                            <th key={h} className="p-2.5 text-right font-semibold">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {shown.map((a) => {
-                          const pct = a.total ? Math.round((a.paid / a.total) * 100) : 100;
-                          return (
-                            <tr key={a.name} onClick={() => setSelected(a.name)} className="cursor-pointer border-t border-border hover:bg-secondary/50">
-                              <td className="p-2.5 font-semibold">
-                                {a.name}
-                                {a.aliases.length > 0 && <span className="mr-2 rounded-full bg-chart-3/15 px-2 text-[10px] text-chart-3">+{a.aliases.length} مدمج</span>}
-                              </td>
-                              <td className="num p-2.5">{fmt(a.passports)}</td>
-                              <td className="num p-2.5 text-primary">{fmt(a.paid)}</td>
-                              <td className="num p-2.5 text-destructive">{fmt(a.remaining)}</td>
-                              <td className="p-2.5">
-                                <div className="flex items-center gap-2">
-                                  <div className="h-1.5 w-20 overflow-hidden rounded-full bg-secondary">
-                                    <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
-                                  </div>
-                                  <span className="num text-xs text-muted-foreground">{pct}%</span>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <div className="space-y-5">
-                  <MergeSuggestions
-                    agents={agents}
-                    dismissed={state.dismissed}
-                    onMerge={(from, into) => {
-                      setState((s) => ({ ...s, aliases: { ...Object.fromEntries(Object.entries(s.aliases).map(([k, v]) => [k, v === from ? into : v])), [from]: into } }));
-                      toast.success(`تم دمج «${from}» في «${into}»`);
-                    }}
-                    onDismiss={(k) => setState((s) => ({ ...s, dismissed: [...s.dismissed, k] }))}
-                  />
-                  <div className="rounded-3xl border border-border bg-card p-5">
-                    <div className="mb-3 font-display font-bold">الملفات المستوردة</div>
-                    {files.map((f) => (
-                      <div key={f} className="flex items-center justify-between border-t border-border py-2 text-sm first:border-0">
-                        <span className="truncate">{f}</span>
-                        <button aria-label="حذف" onClick={() => setState((s) => ({ ...s, records: s.records.filter((r) => r.file !== f) }))} className="text-muted-foreground hover:text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </>
-      )}
+  const totals = agents.reduce((t, a) => ({ total: t.total + a.total, paid: t.paid + a.paid, rem: t.rem + a.remaining, passports: t.passports + a.passports }), { total: 0, paid: 0, rem: 0, passports: 0 });
+  const files = new Set(state.records.map((r) => r.file)).size;
+  const percent = totals.total ? Math.round(totals.paid / totals.total * 100) : 0;
+  return <>
+    <header className="page-heading"><div><h1>لوحة التحكم</h1><div className="page-kicker">حسابات الوكلاء / نظرة عامة</div></div><Button asChild variant="wakilio"><Link to="/imports"><FileUp /> استيراد ملف</Link></Button></header>
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <Stat label="إجمالي الوكلاء" value={fmt(agents.length)} icon={Users} />
+      <Stat label="إجمالي المستحقات" value={fmt(totals.total)} icon={Wallet} tone="text-accent" />
+      <Stat label="إجمالي الواصل" value={fmt(totals.paid)} icon={CircleCheck} tone="text-primary" />
+      <Stat label="إجمالي المتبقي" value={fmt(totals.rem)} icon={Clock} tone="text-warning" />
     </div>
-  );
+    <div className="mt-5 grid gap-5 lg:grid-cols-[1.35fr_1fr]">
+      <section className="summary-panel"><div className="section-heading"><h2>ملخص الحركة المالية</h2><Wallet className="h-4 w-4 text-accent" /></div>
+        {agents.length ? <div className="space-y-6 pt-5"><div className="flex items-end justify-between"><span className="text-sm text-muted-foreground">نسبة السداد</span><strong className="num text-3xl text-primary">{percent}%</strong></div><div className="finance-track"><progress max={100} value={Math.max(0, Math.min(100, percent))} aria-label="نسبة السداد" /></div><div className="flex flex-wrap justify-between gap-3 text-xs"><span className="text-primary">الواصل <b className="num mr-2">{fmt(totals.paid)}</b></span><span className="text-destructive">المتبقي <b className="num mr-2">{fmt(totals.rem)}</b></span></div></div> : <div className="empty-state"><Wallet /><p>لا توجد بيانات مالية بعد</p></div>}
+      </section>
+      <section className="summary-panel"><div className="section-heading"><h2>حالة مساحة العمل</h2><CircleCheck className="h-4 w-4 text-primary" /></div><dl className="divide-y divide-border text-sm">{[["الملفات المستوردة", files], ["إجمالي الجوازات", totals.passports], ["الأسماء المدمجة", Object.keys(state.aliases).length]].map(([label, value]) => <div key={label} className="flex items-center justify-between py-4"><dt className="text-muted-foreground">{label}</dt><dd className="num font-bold">{value}</dd></div>)}</dl></section>
+    </div>
+    <section className="mt-7"><div className="section-heading"><h2>إجراءات سريعة</h2></div><div className="quick-actions">{[{ to: "/imports", label: "استيراد ملف جديد", icon: FileUp }, { to: "/agents", label: "حسابات الوكلاء", icon: Users }, { to: "/suggestions", label: "مراجعة الاقتراحات", icon: Sparkles }].map(({ to, label, icon: Icon }) => <Button asChild variant="outline" key={to}><Link to={to}><span className="nav-icon"><Icon className="text-primary" /></span>{label}</Link></Button>)}</div></section>
+    <section className="mt-7"><div className="section-heading"><h2>حسابات الوكلاء</h2><Button asChild variant="link" size="sm"><Link to="/agents">عرض الكل</Link></Button></div><div className="table-wrap"><table className="wakilio-table"><thead><tr><th>الوكيل</th><th>الجوازات</th><th>الواصل</th><th>المتبقي</th></tr></thead><tbody>{agents.slice(0, 5).map((a) => <tr key={a.name}><td><Link to="/agents" search={{ agent: a.name }} className="font-semibold hover:text-primary">{a.name}</Link></td><td className="num">{fmt(a.passports)}</td><td className="num text-primary">{fmt(a.paid)}</td><td className="num text-destructive">{fmt(a.remaining)}</td></tr>)}</tbody></table>{!agents.length && <div className="empty-state"><FileSpreadsheet /><p>لا توجد حسابات وكلاء بعد</p><Button asChild variant="wakilio"><Link to="/imports"><FileUp /> استيراد ملف</Link></Button></div>}</div></section>
+  </>;
 }
