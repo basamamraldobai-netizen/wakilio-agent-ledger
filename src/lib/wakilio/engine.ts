@@ -10,6 +10,7 @@ export type ColumnRole =
   | "date"
   | "status"
   | "destination"
+  | "profession"
   | "notes";
 
 export const ROLE_LABELS: Record<ColumnRole, string> = {
@@ -22,6 +23,7 @@ export const ROLE_LABELS: Record<ColumnRole, string> = {
   date: "التاريخ",
   status: "الحالة",
   destination: "الجهة",
+  profession: "المهنة",
   notes: "ملاحظات",
 };
 
@@ -33,7 +35,8 @@ const ROLE_KEYWORDS: [ColumnRole, string[]][] = [
   ["receipt", ["سند", "رقم"]],
   ["date", ["تاريخ"]],
   ["status", ["حاله", "حالة", "بالنظام"]],
-  ["destination", ["جهه", "جهة", "مهنه", "مهنة"]],
+  ["profession", ["مهنه", "مهنة", "المهنة", "وظيفه", "وظيفة"]],
+  ["destination", ["جهه", "جهة"]],
   ["notes", ["ملاحظ"]],
 ];
 
