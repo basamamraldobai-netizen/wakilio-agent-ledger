@@ -32,4 +32,19 @@ describe("engine", () => {
     const s = suggestMerges(["ابو همام العجيري", "ابو  همام العجيري", "علي منيع"]);
     expect(s).toHaveLength(1);
   });
+
+  it("maps المهنة column to profession, not destination", () => {
+    expect(guessRole("المهنه")).toBe("profession");
+    expect(guessRole("مهنة")).toBe("profession");
+    expect(guessRole("الجهه")).toBe("destination");
+    const grid = [
+      ["اسم الجواز", "المهنه", "الجهه", "الواصل", "المتبقي"],
+      ["علاء عبدالله", "سائق", "عدن", 0, 3100],
+    ];
+    const h = detectHeaderRow(grid);
+    const roles = grid[h]!.map((c) => guessRole(String(c)));
+    const recs = buildRecords({ grid, headerRow: h, roles, fixedAgent: "", file: "f", sheet: "s" });
+    expect(recs[0]!.profession).toBe("سائق");
+    expect(recs[0]!.destination).toBe("عدن");
+  });
 });
