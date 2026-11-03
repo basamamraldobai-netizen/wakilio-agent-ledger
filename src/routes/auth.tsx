@@ -43,7 +43,7 @@ function AuthPage() {
 
   async function social(provider: "google" | "lovable") {
     const r = await lovable.auth.signInWithOAuth(provider, { redirect_uri: window.location.origin });
-    if (r.error) return toast.error("تعذر تسجيل الدخول");
+    if (r.error) { toast.error("تعذر تسجيل الدخول"); return; }
     if (r.redirected) return;
     navigate({ to: "/" });
   }
