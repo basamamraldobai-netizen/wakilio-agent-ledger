@@ -9,104 +9,110 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AgentsRouteImport } from './routes/agents'
-import { Route as ImportsRouteImport } from './routes/imports'
-import { Route as SuggestionsRouteImport } from './routes/suggestions'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedAgentsRouteImport } from './routes/_authenticated/agents'
+import { Route as AuthenticatedImportsRouteImport } from './routes/_authenticated/imports'
+import { Route as AuthenticatedSuggestionsRouteImport } from './routes/_authenticated/suggestions'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/_authenticated/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AgentsRoute = AgentsRouteImport.update({
-  id: '/agents',
+const AuthenticatedAgentsRoute = AuthenticatedAgentsRouteImport.update({
+  id: '/_authenticated/agents',
   path: '/agents',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ImportsRoute = ImportsRouteImport.update({
-  id: '/imports',
+const AuthenticatedImportsRoute = AuthenticatedImportsRouteImport.update({
+  id: '/_authenticated/imports',
   path: '/imports',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SuggestionsRoute = SuggestionsRouteImport.update({
-  id: '/suggestions',
-  path: '/suggestions',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthenticatedSuggestionsRoute =
+  AuthenticatedSuggestionsRouteImport.update({
+    id: '/_authenticated/suggestions',
+    path: '/suggestions',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/agents': typeof AgentsRoute
-  '/imports': typeof ImportsRoute
-  '/suggestions': typeof SuggestionsRoute
+  '/agents': typeof AuthenticatedAgentsRoute
+  '/imports': typeof AuthenticatedImportsRoute
+  '/suggestions': typeof AuthenticatedSuggestionsRoute
+  '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/agents': typeof AgentsRoute
-  '/imports': typeof ImportsRoute
-  '/suggestions': typeof SuggestionsRoute
+  '/agents': typeof AuthenticatedAgentsRoute
+  '/imports': typeof AuthenticatedImportsRoute
+  '/suggestions': typeof AuthenticatedSuggestionsRoute
+  '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/agents': typeof AgentsRoute
-  '/imports': typeof ImportsRoute
-  '/suggestions': typeof SuggestionsRoute
+  '/_authenticated/agents': typeof AuthenticatedAgentsRoute
+  '/_authenticated/imports': typeof AuthenticatedImportsRoute
+  '/_authenticated/suggestions': typeof AuthenticatedSuggestionsRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/agents' | '/imports' | '/suggestions'
+  fullPaths: '/agents' | '/imports' | '/suggestions' | '/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/agents' | '/imports' | '/suggestions'
-  id: '__root__' | '/' | '/agents' | '/imports' | '/suggestions'
+  to: '/agents' | '/imports' | '/suggestions' | '/'
+  id:
+    | '__root__'
+    | '/_authenticated/agents'
+    | '/_authenticated/imports'
+    | '/_authenticated/suggestions'
+    | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AgentsRoute: typeof AgentsRoute
-  ImportsRoute: typeof ImportsRoute
-  SuggestionsRoute: typeof SuggestionsRoute
+  AuthenticatedAgentsRoute: typeof AuthenticatedAgentsRoute
+  AuthenticatedImportsRoute: typeof AuthenticatedImportsRoute
+  AuthenticatedSuggestionsRoute: typeof AuthenticatedSuggestionsRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/agents': {
-      id: '/agents'
+    '/_authenticated/agents': {
+      id: '/_authenticated/agents'
       path: '/agents'
       fullPath: '/agents'
-      preLoaderRoute: typeof AgentsRouteImport
+      preLoaderRoute: typeof AuthenticatedAgentsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/imports': {
-      id: '/imports'
+    '/_authenticated/imports': {
+      id: '/_authenticated/imports'
       path: '/imports'
       fullPath: '/imports'
-      preLoaderRoute: typeof ImportsRouteImport
+      preLoaderRoute: typeof AuthenticatedImportsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/suggestions': {
-      id: '/suggestions'
+    '/_authenticated/suggestions': {
+      id: '/_authenticated/suggestions'
       path: '/suggestions'
       fullPath: '/suggestions'
-      preLoaderRoute: typeof SuggestionsRouteImport
+      preLoaderRoute: typeof AuthenticatedSuggestionsRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AgentsRoute: AgentsRoute,
-  ImportsRoute: ImportsRoute,
-  SuggestionsRoute: SuggestionsRoute,
+  AuthenticatedAgentsRoute: AuthenticatedAgentsRoute,
+  AuthenticatedImportsRoute: AuthenticatedImportsRoute,
+  AuthenticatedSuggestionsRoute: AuthenticatedSuggestionsRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
