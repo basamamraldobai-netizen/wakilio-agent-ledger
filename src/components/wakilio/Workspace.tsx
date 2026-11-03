@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
-import { LayoutDashboard, Users, FileUp, Sparkles, PanelRightClose, Menu, X, HardDrive } from "lucide-react";
+import { LayoutDashboard, Users, FileUp, Sparkles, PanelRightClose, Menu, X, Cloud, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/wakilio-logo.asset.json";
 
 const navigation = [
@@ -26,7 +27,7 @@ export function Workspace({ children }: { children: ReactNode }) {
             <span><strong className="font-display block text-lg font-extrabold">وكــيليـو</strong><span className="num block text-[8px] text-muted-foreground" dir="ltr">WAKILIO</span></span>
           </Link>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground"><span className="h-2 w-2 rounded-full bg-primary" /><span>مساحة العمل</span></div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground"><span className="h-2 w-2 rounded-full bg-primary" /><span>مساحة العمل</span><Button variant="outline" size="icon" title="تسجيل الخروج" aria-label="تسجيل الخروج" onClick={() => supabase.auth.signOut()}><LogOut /></Button></div>
       </header>
       <div className="workspace-layout">
         {open && <div className="sidebar-backdrop md:hidden" onClick={() => setOpen(false)} aria-hidden="true" />}
@@ -39,7 +40,7 @@ export function Workspace({ children }: { children: ReactNode }) {
               </Button>
             ))}
           </nav>
-          <div className="sidebar-footer"><HardDrive className="h-4 w-4 shrink-0" /><span className="nav-label text-xs">البيانات محفوظة في هذا المتصفح</span></div>
+          <div className="sidebar-footer"><Cloud className="h-4 w-4 shrink-0" /><span className="nav-label text-xs">البيانات محفوظة سحابياً</span></div>
         </aside>
         <main className="workspace-main">{children}</main>
       </div>
