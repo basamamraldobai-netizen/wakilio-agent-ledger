@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { summarize } from "@/lib/wakilio/engine";
 import { useWakilio } from "@/components/wakilio/WakilioContext";
 import { MergeSuggestions } from "@/components/wakilio/MergeSuggestions";
-export const Route = createFileRoute("/suggestions")({
+export const Route = createFileRoute("/_authenticated/suggestions")({
   head: () => ({ meta: [
     { title: "WAKILIO | صندوق الاقتراحات" }, { name: "description", content: "مراجعة أسماء الوكلاء المتشابهة ودمج الحسابات بعد التحقق من المطابقة." },
     { property: "og:title", content: "WAKILIO | صندوق الاقتراحات" }, { property: "og:description", content: "مطابقة مرنة لأسماء الوكلاء مع خيارات الدمج والتجاهل." },

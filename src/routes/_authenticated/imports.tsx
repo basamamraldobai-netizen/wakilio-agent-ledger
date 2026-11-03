@@ -4,7 +4,7 @@ import { ImportPanel } from "@/components/wakilio/ImportPanel";
 import { ImportedFiles } from "@/components/wakilio/ImportedFiles";
 import { useWakilio } from "@/components/wakilio/WakilioContext";
 
-export const Route = createFileRoute("/imports")({
+export const Route = createFileRoute("/_authenticated/imports")({
   head: () => ({ meta: [
     { title: "WAKILIO | استيراد الملفات" }, { name: "description", content: "استيراد ملفات Excel وتعيين أعمدة الوكيل والجواز والمهنة والمبالغ بمرونة." },
     { property: "og:title", content: "WAKILIO | استيراد الملفات" }, { property: "og:description", content: "معاينة ومراجعة بيانات ملفات الوكلاء قبل اعتماد الاستيراد." },

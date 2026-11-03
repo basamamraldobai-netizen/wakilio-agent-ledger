@@ -6,7 +6,7 @@ import { summarize } from "@/lib/wakilio/engine";
 import { useWakilio } from "@/components/wakilio/WakilioContext";
 import { Stat, fmt } from "@/components/wakilio/AgentStatement";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => ({ meta: [
     { title: "WAKILIO | لوحة التحكم" },
     { name: "description", content: "لوحة التحكم في حسابات الوكلاء والمستحقات والواصل والمتبقي في وكيليو." },
