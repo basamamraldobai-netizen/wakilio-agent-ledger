@@ -14,7 +14,156 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      agent_aliases: {
+        Row: {
+          alias: string
+          target: string
+          user_id: string
+        }
+        Insert: {
+          alias: string
+          target: string
+          user_id?: string
+        }
+        Update: {
+          alias?: string
+          target?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agents: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      dismissed_suggestions: {
+        Row: {
+          key: string
+          user_id: string
+        }
+        Insert: {
+          key: string
+          user_id?: string
+        }
+        Update: {
+          key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      import_files: {
+        Row: {
+          id: string
+          imported_at: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          imported_at?: string
+          name: string
+          user_id?: string
+        }
+        Update: {
+          id?: string
+          imported_at?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          agent_id: string | null
+          agent_raw: string
+          client_id: string
+          created_at: string
+          destination: string
+          file_id: string
+          id: string
+          notes: string
+          paid: number
+          passport: string
+          profession: string
+          receipt: string
+          remaining: number
+          sheet: string
+          status: string
+          tx_date: string
+          user_id: string
+        }
+        Insert: {
+          agent_id?: string | null
+          agent_raw?: string
+          client_id: string
+          created_at?: string
+          destination?: string
+          file_id: string
+          id?: string
+          notes?: string
+          paid?: number
+          passport?: string
+          profession?: string
+          receipt?: string
+          remaining?: number
+          sheet?: string
+          status?: string
+          tx_date?: string
+          user_id?: string
+        }
+        Update: {
+          agent_id?: string | null
+          agent_raw?: string
+          client_id?: string
+          created_at?: string
+          destination?: string
+          file_id?: string
+          id?: string
+          notes?: string
+          paid?: number
+          passport?: string
+          profession?: string
+          receipt?: string
+          remaining?: number
+          sheet?: string
+          status?: string
+          tx_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "import_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
