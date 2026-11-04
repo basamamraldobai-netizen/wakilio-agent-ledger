@@ -12,3 +12,4 @@
 - Excel import/matching logic lives in pure functions in src/lib/wakilio/engine.ts (tested); UI in src/components/wakilio. Data persists per signed-in user in Lovable Cloud; useWakilioStore diffs state changes and syncs them, so UI code keeps the simple setState API.
 - Keep the shared WAKILIO store provider and workspace shell in the _authenticated layout (all app pages require sign-in, rows are owner-scoped by RLS) so dashboard, imports, agents and suggestions share existing records and aliases across navigation.
 - Express workspace styling through semantic global tokens and the shared Button variants to keep the reference design consistent without coupling it to Excel engine logic.
+- Public landing (with the live login card) owns `/`; the signed-in workspace home is `/dashboard`, so signed-out visitors land on marketing and signed-in users are redirected in.
