@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/wakilio-logo.asset.json";
 
 const navigation = [
-  { to: "/", label: "لوحة التحكم", icon: LayoutDashboard },
+  { to: "/dashboard", label: "لوحة التحكم", icon: LayoutDashboard },
   { to: "/agents", label: "حسابات الوكلاء", icon: Users },
   { to: "/imports", label: "استيراد الملفات", icon: FileUp },
   { to: "/suggestions", label: "صندوق الاقتراحات", icon: Sparkles },
@@ -22,7 +22,7 @@ export function Workspace({ children }: { children: ReactNode }) {
         <div className="flex items-center gap-3">
           <Button variant="outline" size="icon" className="hidden md:inline-flex" title="طي أو توسيع القائمة" aria-label="طي أو توسيع القائمة" onClick={() => setCollapsed(!collapsed)}><PanelRightClose /></Button>
           <Button variant="outline" size="icon" className="md:hidden" title={open ? "إغلاق القائمة" : "فتح القائمة"} aria-label={open ? "إغلاق القائمة" : "فتح القائمة"} aria-expanded={open} onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</Button>
-          <Link to="/" className="workspace-brand" aria-label="وكيليو — لوحة التحكم">
+          <Link to="/dashboard" className="workspace-brand" aria-label="وكيليو — لوحة التحكم">
             <img src={logo.url} alt="شعار وكيليو" className="brand-mark" />
             <span><strong className="font-display block text-lg font-extrabold">وكــيليـو</strong><span className="num block text-[8px] text-muted-foreground" dir="ltr">WAKILIO</span></span>
           </Link>
