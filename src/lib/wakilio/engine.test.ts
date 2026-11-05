@@ -33,6 +33,22 @@ describe("engine", () => {
     expect(s).toHaveLength(1);
   });
 
+  it("accumulates repeated passports instead of doubling debt", () => {
+    const base = { file: "f", sheet: "s", agentRaw: "أحمد", receipt: "", date: "", status: "", destination: "", profession: "", notes: "" };
+    const recs = [
+      { ...base, id: "1", passport: "خيرالله محمد صادق", paid: 0, remaining: 3300 },
+      { ...base, id: "2", passport: "خير الله  محمد صادق", paid: 3000, remaining: 500 },
+      { ...base, id: "3", passport: "علي", paid: 100, remaining: 200 },
+    ];
+    const s = summarize(recs, {})[0]!;
+    expect(s.passports).toBe(2);
+    const acc = s.accounts.find((a) => a.records.length === 2)!;
+    expect(acc.remaining).toBe(300);
+    expect(acc.diff).toBe(200);
+    expect(s.remaining).toBe(500);
+    expect(s.paid).toBe(3100);
+  });
+
   it("maps المهنة column to profession, not destination", () => {
     expect(guessRole("المهنه")).toBe("profession");
     expect(guessRole("مهنة")).toBe("profession");

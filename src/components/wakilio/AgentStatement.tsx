@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Printer, Wallet, type LucideIcon } from "lucide-react";
+import { AlertTriangle, ArrowRight, Printer, Wallet, type LucideIcon } from "lucide-react";
 import type { AgentSummary } from "@/lib/wakilio/engine";
 
 export const fmt = (n: number) => n.toLocaleString("en-US");
@@ -15,6 +15,7 @@ export function Stat({ label, value, tone = "text-foreground", icon: Icon = Wall
 
 export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSummary; onBack: () => void; onUnmerge: (alias: string) => void }) {
   let running = 0;
+  const audits = agent.accounts.filter((a) => a.records.length > 1 && a.diff !== 0);
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -42,43 +43,78 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
           <Stat label="إجمالي الجوازات" value={fmt(agent.passports)} />
           <Stat label="إجمالي المستحق" value={fmt(agent.total)} tone="text-accent" />
           <Stat label="الواصل" value={fmt(agent.paid)} tone="text-primary" />
-          <Stat label="المتبقي" value={fmt(agent.remaining)} tone="text-destructive" />
+          <Stat label="المتبقي الفعلي" value={fmt(agent.remaining)} tone="text-destructive" />
         </div>
       </div>
+      {audits.length > 0 && (
+        <div className="rounded-[14px] border border-chart-3/40 bg-chart-3/10 p-4 text-sm">
+          <div className="mb-2 flex items-center gap-2 font-bold text-chart-3"><AlertTriangle className="h-4 w-4" /> تنبيه تدقيق مالي ({audits.length})</div>
+          <ul className="space-y-1 text-muted-foreground">
+            {audits.map((a) => (
+              <li key={a.key}>
+                <span className="font-semibold text-foreground">{a.name}</span>: المستحق <span className="num">{fmt(a.due)}</span> − الواصل التراكمي <span className="num">{fmt(a.paid)}</span> = المتبقي الفعلي <span className="num font-semibold text-destructive">{fmt(a.remaining)}</span>، بينما المسجل في الملف <span className="num">{fmt(a.recordedRemaining)}</span> (فارق <span className="num">{fmt(a.diff)}</span>)
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className="table-wrap">
         <table className="wakilio-table statement-table">
           <thead className="bg-secondary text-xs text-muted-foreground">
             <tr>
-              {["#", "اسم الجواز", "المهنة", "رقم السند", "التاريخ", "الحالة / الجهة", "الواصل", "المتبقي", "الرصيد التراكمي", "ملاحظات"].map((h) => (
+              {["#", "اسم الجواز", "المهنة", "رقم السند", "التاريخ", "الحالة / الجهة", "الواصل", "المتبقي المسجل", "الرصيد الفعلي", "ملاحظات"].map((h) => (
                 <th key={h} className="whitespace-nowrap p-3 text-right font-semibold">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {agent.records.map((r, i) => {
-              running += r.remaining;
-              return (
-                <tr key={r.id} className="border-t border-border hover:bg-secondary/40">
+            {agent.accounts.map((acc, i) => {
+              running += acc.remaining;
+              const multi = acc.records.length > 1;
+              let paidSoFar = 0;
+              return [
+                <tr key={acc.key} className="border-t border-border hover:bg-secondary/40">
                   <td className="num p-3 text-muted-foreground">{i + 1}</td>
-                  <td className="p-3 font-medium">{r.passport}</td>
-                  <td className="p-3 text-muted-foreground">{r.profession}</td>
-                  <td className="num p-3">{r.receipt}</td>
-                  <td className="num whitespace-nowrap p-3">{r.date}</td>
-                  <td className="p-3 text-muted-foreground">{[r.status, r.destination].filter(Boolean).join(" · ")}</td>
-                  <td className="num p-3 text-primary">{fmt(r.paid)}</td>
-                  <td className="num p-3 text-destructive">{fmt(r.remaining)}</td>
-                  <td className="num p-3 font-semibold">{fmt(running)}</td>
-                  <td className="p-3 text-xs text-muted-foreground">{r.notes}</td>
-                </tr>
-              );
+                  <td className="p-3 font-medium">
+                    {acc.name}
+                    {multi && <span className="mr-2 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] text-accent">{acc.records.length} دفعات</span>}
+                    {acc.variants.length > 1 && <div className="text-[10px] text-muted-foreground">صيغ: {acc.variants.join(" / ")}</div>}
+                  </td>
+                  <td className="p-3 text-muted-foreground">{acc.records[0]!.profession}</td>
+                  <td className="num p-3">{multi ? "—" : acc.records[0]!.receipt}</td>
+                  <td className="num whitespace-nowrap p-3">{multi ? "—" : acc.records[0]!.date}</td>
+                  <td className="p-3 text-muted-foreground">{[acc.records[0]!.status, acc.records[0]!.destination].filter(Boolean).join(" · ")}</td>
+                  <td className="num p-3 text-primary">{fmt(acc.paid)}</td>
+                  <td className="num p-3 text-muted-foreground">{fmt(acc.recordedRemaining)}{multi && acc.diff !== 0 && <AlertTriangle className="mr-1 inline h-3 w-3 text-chart-3" />}</td>
+                  <td className="num p-3 font-semibold text-destructive">{fmt(acc.remaining)}</td>
+                  <td className="p-3 text-xs text-muted-foreground">{multi ? `المستحق ${fmt(acc.due)}` : acc.records[0]!.notes}</td>
+                </tr>,
+                ...(multi ? acc.records.map((r, j) => {
+                  paidSoFar += r.paid;
+                  return (
+                    <tr key={r.id} className="bg-secondary/20 text-xs">
+                      <td />
+                      <td className="p-2 pr-6 text-muted-foreground">↳ دفعة {j + 1}: {r.passport}</td>
+                      <td />
+                      <td className="num p-2">{r.receipt}</td>
+                      <td className="num whitespace-nowrap p-2">{r.date}</td>
+                      <td className="p-2 text-muted-foreground">{[r.status, r.destination].filter(Boolean).join(" · ")}</td>
+                      <td className="num p-2 text-primary">{fmt(r.paid)}</td>
+                      <td className="num p-2 text-muted-foreground">{fmt(r.remaining)}</td>
+                      <td className="num p-2">{fmt(acc.due - paidSoFar)}</td>
+                      <td className="p-2 text-muted-foreground">{r.notes}</td>
+                    </tr>
+                  );
+                }) : []),
+              ];
             })}
           </tbody>
           <tfoot className="border-t-2 border-primary/40 bg-secondary font-bold">
             <tr>
               <td colSpan={6} className="p-3">الإجمالي ({fmt(agent.passports)} جواز)</td>
               <td className="num p-3 text-primary">{fmt(agent.paid)}</td>
-              <td className="num p-3 text-destructive">{fmt(agent.remaining)}</td>
-              <td className="num p-3">{fmt(agent.remaining)}</td>
+              <td />
+              <td className="num p-3 text-destructive">{fmt(running)}</td>
               <td />
             </tr>
           </tfoot>

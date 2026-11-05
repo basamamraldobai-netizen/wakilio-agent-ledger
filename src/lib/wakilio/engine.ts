@@ -213,6 +213,50 @@ export function suggestMerges(names: string[], threshold = 0.8): MergeSuggestion
   return out.sort((p, q) => q.score - p.score);
 }
 
+export type PassportAccount = {
+  key: string;
+  name: string;
+  variants: string[];
+  records: TxRecord[];
+  due: number; // original amount owed (first row: paid + remaining)
+  paid: number; // cumulative payments across all rows
+  remaining: number; // actual balance = due - paid
+  recordedRemaining: number; // remaining written on the latest row
+  diff: number; // recordedRemaining - remaining (audit gap)
+};
+
+/** Passport-name key: ignores spaces, hamza forms, diacritics, ta marbuta. */
+export const passportKey = (s: string) => nameKey(s);
+
+/** Groups an agent's rows by passport and computes the cumulative real balance. */
+export function groupPassports(records: TxRecord[]): PassportAccount[] {
+  const map = new Map<string, TxRecord[]>();
+  for (const r of records) {
+    const k = passportKey(r.passport) || r.passport;
+    const list = map.get(k);
+    if (list) list.push(r);
+    else map.set(k, [r]);
+  }
+  return [...map.entries()].map(([key, recs]) => {
+    const first = recs.find((r) => r.paid + r.remaining > 0) ?? recs[0]!;
+    const due = first.paid + first.remaining;
+    const paid = recs.reduce((t, r) => t + r.paid, 0);
+    const remaining = recs.length === 1 ? recs[0]!.remaining : due - paid;
+    const recordedRemaining = recs[recs.length - 1]!.remaining;
+    return {
+      key,
+      name: recs[0]!.passport,
+      variants: [...new Set(recs.map((r) => r.passport))],
+      records: recs,
+      due: recs.length === 1 ? recs[0]!.paid + recs[0]!.remaining : due,
+      paid,
+      remaining,
+      recordedRemaining,
+      diff: recordedRemaining - remaining,
+    };
+  });
+}
+
 export type AgentSummary = {
   name: string;
   aliases: string[];
@@ -221,6 +265,7 @@ export type AgentSummary = {
   remaining: number;
   total: number;
   records: TxRecord[];
+  accounts: PassportAccount[];
 };
 
 export function resolveAgent(raw: string, aliases: Record<string, string>): string {
@@ -239,15 +284,18 @@ export function summarize(records: TxRecord[], aliases: Record<string, string>):
     const name = resolveAgent(r.agentRaw, aliases);
     let s = map.get(name);
     if (!s) {
-      s = { name, aliases: [], passports: 0, paid: 0, remaining: 0, total: 0, records: [] };
+      s = { name, aliases: [], passports: 0, paid: 0, remaining: 0, total: 0, records: [], accounts: [] };
       map.set(name, s);
     }
     if (r.agentRaw !== name && !s.aliases.includes(r.agentRaw)) s.aliases.push(r.agentRaw);
-    s.passports++;
-    s.paid += r.paid;
-    s.remaining += r.remaining;
-    s.total = s.paid + s.remaining;
     s.records.push(r);
+  }
+  for (const s of map.values()) {
+    s.accounts = groupPassports(s.records);
+    s.passports = s.accounts.length;
+    s.paid = s.accounts.reduce((t, a) => t + a.paid, 0);
+    s.remaining = s.accounts.reduce((t, a) => t + a.remaining, 0);
+    s.total = s.paid + s.remaining;
   }
   return [...map.values()].sort((a, b) => b.remaining - a.remaining);
 }
