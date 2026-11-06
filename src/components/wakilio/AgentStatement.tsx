@@ -75,10 +75,13 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
       </div>
       <div className="table-wrap">
         <table className="wakilio-table statement-table">
+          <colgroup>
+            <col className="w-[5%]" /><col className="w-[33%]" /><col className="w-[15%]" /><col className="w-[12%]" /><col className="w-[13%]" /><col className="w-[18%]" /><col className="w-[4%]" />
+          </colgroup>
           <thead className="bg-secondary text-xs text-muted-foreground">
             <tr>
               {["#", "اسم الجواز", "المهنة", "الواصل", "الرصيد الفعلي", "الحالة / الجهة", ""].map((h, i) => (
-                <th key={h || i} className={`whitespace-nowrap p-3 text-right font-semibold ${i === 5 ? "w-full" : "w-px"}`}>{h}</th>
+                <th key={h || i} className="whitespace-nowrap p-3 text-right font-semibold">{h}</th>
               ))}
             </tr>
           </thead>
@@ -89,17 +92,16 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
               return (
                 <tr key={acc.key} onClick={() => setOpen(acc)} className="group cursor-pointer border-t border-border transition-colors hover:bg-secondary/60">
                   <td className="num p-3 text-muted-foreground">{i + 1}</td>
-                  <td className="whitespace-nowrap p-3 font-medium">
-                    <span className="group-hover:text-primary">{acc.name}</span>
-                    <span className={`mr-2 rounded-full px-2 py-0.5 text-[10px] font-semibold print:hidden ${multi ? "bg-accent/15 text-accent" : "bg-secondary text-muted-foreground"}`}>{multi ? `${acc.records.length} دفعات` : "دفعة واحدة"}</span>
-                    {acc.remaining < 0 && <span className="mr-1.5 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary print:hidden">فائض: <span className="num">{fmt(-acc.remaining)}</span></span>}
+                  <td className="p-3 font-medium">
+                    <div className="flex w-max max-w-full flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="min-w-0 break-words group-hover:text-primary">{acc.name}</span>
+                      <span className={`shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset print:hidden ${multi ? "bg-accent/15 text-accent ring-accent/30" : "bg-warning/12 text-warning ring-warning/30"}`}>{multi ? `${acc.records.length} دفعات` : "دفعة واحدة"}</span>
+                      {acc.remaining < 0 && <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary ring-1 ring-inset ring-primary/30 print:hidden">فائض: <span className="num">{fmt(-acc.remaining)}</span></span>}
+                    </div>
                   </td>
                   <td className="whitespace-nowrap p-3 text-muted-foreground">{acc.records[0]!.profession}</td>
                   <td className="num p-3 text-primary">{fmt(acc.paid)}</td>
-                  <td className="num whitespace-nowrap p-3 font-semibold text-destructive">
-                    {fmt(acc.remaining)}
-                    {multi && acc.diff !== 0 && <span title={`فارق تدقيق ${fmt(acc.diff)}`} className="mr-1.5 inline-flex items-center rounded-full bg-chart-3/15 px-1.5 py-0.5 align-middle text-chart-3"><AlertTriangle className="h-3 w-3" /></span>}
-                  </td>
+                  <td className="num whitespace-nowrap p-3 font-semibold text-destructive">{fmt(acc.remaining)}</td>
                   <td className="p-3 text-muted-foreground">{[last.status, last.destination].filter(Boolean).join(" · ")}</td>
                   <td className="p-3 print:hidden"><Button size="icon" variant="ghost" aria-label={`تفاصيل ${acc.name}`} title="التفاصيل" onClick={(e) => { e.stopPropagation(); setOpen(acc); }} className="h-8 w-8 text-muted-foreground group-hover:text-primary"><ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" /></Button></td>
                 </tr>

@@ -162,7 +162,7 @@
 .wakilio-table th { font-weight: 700; color: var(--muted-foreground); background: var(--secondary); white-space: nowrap; }
 .wakilio-table tbody tr:last-child td { border-bottom: 0; }
 .wakilio-table tbody tr:hover { background: color-mix(in oklab, var(--secondary) 50%, transparent); }
-.statement-table { min-width: 1080px; }
+.statement-table { min-width: 700px; table-layout: fixed; }
 .mapping-table { min-width: 620px; }
 .mapping-table td { max-width: 250px; }
 .file-name { overflow-wrap: anywhere; }
