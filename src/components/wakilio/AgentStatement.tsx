@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, ArrowRight, Printer, Wallet, type LucideIcon } from "lucide-react";
+import { AlertTriangle, ArrowRight, Eye, Printer, Wallet, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { AgentSummary, PassportAccount } from "@/lib/wakilio/engine";
@@ -15,9 +15,19 @@ export function Stat({ label, value, tone = "text-foreground", icon: Icon = Wall
   );
 }
 
+type FilterId = "all" | "single" | "multi" | "over" | "owing";
+const FILTERS: { id: FilterId; label: string; test: (a: PassportAccount) => boolean }[] = [
+  { id: "all", label: "الكل", test: () => true },
+  { id: "single", label: "دفعة واحدة", test: (a) => a.records.length === 1 },
+  { id: "multi", label: "دفعات متعددة", test: (a) => a.records.length > 1 },
+  { id: "over", label: "مدفوع بزيادة (فائض)", test: (a) => a.remaining < 0 },
+  { id: "owing", label: "متبقي عليه", test: (a) => a.remaining > 0 },
+];
+
 export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSummary; onBack: () => void; onUnmerge: (alias: string) => void }) {
   const [open, setOpen] = useState<PassportAccount | null>(null);
-  const audits = agent.accounts.filter((a) => a.records.length > 1 && a.diff !== 0);
+  const [filter, setFilter] = useState<FilterId>("all");
+  const rows = agent.accounts.filter(FILTERS.find((f) => f.id === filter)!.test);
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -48,33 +58,28 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
           <Stat label="المتبقي الفعلي" value={fmt(agent.remaining)} tone="text-destructive" />
         </div>
       </div>
-      {audits.length > 0 && (
-        <div className="rounded-[14px] border border-chart-3/40 bg-chart-3/10 p-4 text-sm">
-          <div className="mb-2 flex items-center gap-2 font-bold text-chart-3"><AlertTriangle className="h-4 w-4" /> تنبيه تدقيق مالي ({audits.length})</div>
-          <ul className="space-y-1 text-muted-foreground">
-            {audits.map((a) => (
-              <li key={a.key}>
-                <span className="font-semibold text-foreground">{a.name}</span>: المستحق <span className="num">{fmt(a.due)}</span> − الواصل التراكمي <span className="num">{fmt(a.paid)}</span> = المتبقي الفعلي <span className="num font-semibold text-destructive">{fmt(a.remaining)}</span>، بينما المسجل في الملف <span className="num">{fmt(a.recordedRemaining)}</span> (فارق <span className="num">{fmt(a.diff)}</span>)
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <div className="flex flex-wrap gap-2 print:hidden">
+        {FILTERS.map((f) => (
+          <Button key={f.id} size="sm" variant={filter === f.id ? "default" : "outline"} onClick={() => setFilter(f.id)} className="rounded-full">
+            {f.label} <span className="num mr-1 opacity-70">{agent.accounts.filter(f.test).length}</span>
+          </Button>
+        ))}
+      </div>
       <div className="table-wrap">
         <table className="wakilio-table statement-table">
           <thead className="bg-secondary text-xs text-muted-foreground">
             <tr>
-              {["#", "اسم الجواز", "المهنة", "الواصل", "الرصيد الفعلي", "الحالة / الجهة"].map((h) => (
+              {["#", "اسم الجواز", "المهنة", "الواصل", "الرصيد الفعلي", "الحالة / الجهة", ""].map((h) => (
                 <th key={h} className="whitespace-nowrap p-3 text-right font-semibold">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {agent.accounts.map((acc, i) => {
+            {rows.map((acc, i) => {
               const multi = acc.records.length > 1;
               const last = acc.records[acc.records.length - 1]!;
               return (
-                <tr key={acc.key} onClick={multi ? () => setOpen(acc) : undefined} className={`border-t border-border hover:bg-secondary/40 ${multi ? "cursor-pointer" : ""}`}>
+                <tr key={acc.key} onClick={() => setOpen(acc)} className="cursor-pointer border-t border-border hover:bg-secondary/40">
                   <td className="num p-3 text-muted-foreground">{i + 1}</td>
                   <td className="whitespace-nowrap p-3 font-medium">
                     {acc.name}
@@ -87,6 +92,7 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
                     {multi && acc.diff !== 0 && <span title={`فارق تدقيق ${fmt(acc.diff)}`} className="mr-1.5 inline-flex items-center rounded-full bg-chart-3/15 px-1.5 py-0.5 align-middle text-chart-3"><AlertTriangle className="h-3 w-3" /></span>}
                   </td>
                   <td className="p-3 text-muted-foreground">{[last.status, last.destination].filter(Boolean).join(" · ")}</td>
+                  <td className="p-3 print:hidden"><Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setOpen(acc); }}><Eye className="h-3.5 w-3.5" /> التفاصيل</Button></td>
                 </tr>
               );
             })}
@@ -97,6 +103,7 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
               <td className="num p-3 text-primary">{fmt(agent.paid)}</td>
               <td className="num p-3 text-destructive">{fmt(agent.remaining)}</td>
               <td />
+              <td className="print:hidden" />
             </tr>
           </tfoot>
         </table>
