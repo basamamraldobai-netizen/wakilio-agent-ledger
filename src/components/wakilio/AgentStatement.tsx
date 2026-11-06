@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, ArrowRight, Eye, Printer, Wallet, type LucideIcon } from "lucide-react";
+import { AlertTriangle, ArrowRight, ChevronLeft, Printer, Search, Wallet, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { AgentSummary, PassportAccount } from "@/lib/wakilio/engine";
@@ -27,7 +27,10 @@ const FILTERS: { id: FilterId; label: string; test: (a: PassportAccount) => bool
 export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSummary; onBack: () => void; onUnmerge: (alias: string) => void }) {
   const [open, setOpen] = useState<PassportAccount | null>(null);
   const [filter, setFilter] = useState<FilterId>("all");
-  const rows = agent.accounts.filter(FILTERS.find((f) => f.id === filter)!.test);
+  const [q, setQ] = useState("");
+  const term = q.trim().toLowerCase();
+  const matches = (a: PassportAccount) => !term || a.name.toLowerCase().includes(term) || a.records.some((r) => [r.passport, r.receipt, r.profession, r.notes, r.status, r.destination].some((v) => String(v ?? "").toLowerCase().includes(term)));
+  const rows = agent.accounts.filter(FILTERS.find((f) => f.id === filter)!.test).filter(matches);
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -58,6 +61,11 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
           <Stat label="المتبقي الفعلي" value={fmt(agent.remaining)} tone="text-destructive" />
         </div>
       </div>
+      <div className="flex items-center gap-2 rounded-[11px] border border-input bg-card px-3 py-2.5 print:hidden">
+        <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} aria-label="بحث في الجوازات" placeholder="ابحث بالاسم، رقم السند، المهنة، الملاحظات..." className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
+        {q && <span className="num text-xs text-muted-foreground">{rows.length} نتيجة</span>}
+      </div>
       <div className="flex flex-wrap gap-2 print:hidden">
         {FILTERS.map((f) => (
           <Button key={f.id} size="sm" variant={filter === f.id ? "default" : "outline"} onClick={() => setFilter(f.id)} className="rounded-full">
@@ -69,8 +77,8 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
         <table className="wakilio-table statement-table">
           <thead className="bg-secondary text-xs text-muted-foreground">
             <tr>
-              {["#", "اسم الجواز", "المهنة", "الواصل", "الرصيد الفعلي", "الحالة / الجهة", ""].map((h) => (
-                <th key={h} className="whitespace-nowrap p-3 text-right font-semibold">{h}</th>
+              {["#", "اسم الجواز", "المهنة", "الواصل", "الرصيد الفعلي", "الحالة / الجهة", ""].map((h, i) => (
+                <th key={h || i} className={`whitespace-nowrap p-3 text-right font-semibold ${i === 5 ? "w-full" : "w-px"}`}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -79,20 +87,21 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
               const multi = acc.records.length > 1;
               const last = acc.records[acc.records.length - 1]!;
               return (
-                <tr key={acc.key} onClick={() => setOpen(acc)} className="cursor-pointer border-t border-border hover:bg-secondary/40">
+                <tr key={acc.key} onClick={() => setOpen(acc)} className="group cursor-pointer border-t border-border transition-colors hover:bg-secondary/60">
                   <td className="num p-3 text-muted-foreground">{i + 1}</td>
                   <td className="whitespace-nowrap p-3 font-medium">
-                    {acc.name}
-                    {multi && <span className="mr-2 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent print:hidden">{acc.records.length} دفعات</span>}
+                    <span className="group-hover:text-primary">{acc.name}</span>
+                    <span className={`mr-2 rounded-full px-2 py-0.5 text-[10px] font-semibold print:hidden ${multi ? "bg-accent/15 text-accent" : "bg-secondary text-muted-foreground"}`}>{multi ? `${acc.records.length} دفعات` : "دفعة واحدة"}</span>
+                    {acc.remaining < 0 && <span className="mr-1.5 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary print:hidden">فائض: <span className="num">{fmt(-acc.remaining)}</span></span>}
                   </td>
-                  <td className="p-3 text-muted-foreground">{acc.records[0]!.profession}</td>
+                  <td className="whitespace-nowrap p-3 text-muted-foreground">{acc.records[0]!.profession}</td>
                   <td className="num p-3 text-primary">{fmt(acc.paid)}</td>
                   <td className="num whitespace-nowrap p-3 font-semibold text-destructive">
                     {fmt(acc.remaining)}
                     {multi && acc.diff !== 0 && <span title={`فارق تدقيق ${fmt(acc.diff)}`} className="mr-1.5 inline-flex items-center rounded-full bg-chart-3/15 px-1.5 py-0.5 align-middle text-chart-3"><AlertTriangle className="h-3 w-3" /></span>}
                   </td>
                   <td className="p-3 text-muted-foreground">{[last.status, last.destination].filter(Boolean).join(" · ")}</td>
-                  <td className="p-3 print:hidden"><Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setOpen(acc); }}><Eye className="h-3.5 w-3.5" /> التفاصيل</Button></td>
+                  <td className="p-3 print:hidden"><Button size="icon" variant="ghost" aria-label={`تفاصيل ${acc.name}`} title="التفاصيل" onClick={(e) => { e.stopPropagation(); setOpen(acc); }} className="h-8 w-8 text-muted-foreground group-hover:text-primary"><ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" /></Button></td>
                 </tr>
               );
             })}
