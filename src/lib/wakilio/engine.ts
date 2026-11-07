@@ -121,6 +121,13 @@ export type TxRecord = {
   destination: string;
   profession: string;
   notes: string;
+  sharedReceipt?: {
+    sourceId: string;
+    participants: string[];
+    originalPaid: number;
+    originalRemaining: number;
+    needsReview: boolean;
+  };
 };
 
 function formatDate(v: unknown): string {
@@ -228,10 +235,78 @@ export type PassportAccount = {
 /** Passport-name key: ignores spaces, hamza forms, diacritics, ta marbuta. */
 export const passportKey = (s: string) => nameKey(s);
 
+/** Explicit separators only: ordinary spaces and the Arabic conjunction are names, not delimiters. */
+export function splitPassportNames(value: string): string[] {
+  return [...new Map(value.split(/[+＋،,;؛\n]+/u)
+    .map(normalizeText).filter(Boolean).map((name) => [passportKey(name), name])).values()];
+}
+
+function receiptDate(value: string): number | undefined {
+  const iso = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (iso) return Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+  const local = value.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (!local) return undefined;
+  const a = Number(local[1]), b = Number(local[2]);
+  if (a <= 12 && b <= 12) return undefined;
+  return Date.UTC(Number(local[3]), (b > 12 ? a : b) - 1, b > 12 ? b : a);
+}
+
+/** Derived rows leave persisted source receipts untouched, so reloading/importing never splits twice. */
+export function processSharedReceipts(records: TxRecord[]): TxRecord[] {
+  const dated = records.map((record) => receiptDate(record.date));
+  // Only reorder when every date can be interpreted; otherwise retain source order.
+  const ordered = dated.every((date) => date !== undefined)
+    ? records.map((record, index) => ({ record, index, date: dated[index] ?? 0 }))
+      .sort((a, b) => a.date - b.date || a.index - b.index).map(({ record }) => record)
+    : records;
+  const balances = new Map<string, { due: number; paid: number; uncertain: boolean }>();
+  const result: TxRecord[] = [];
+  const track = (record: TxRecord) => {
+    const key = passportKey(record.passport);
+    const previous = balances.get(key);
+    balances.set(key, previous
+      ? { due: previous.due || record.paid + record.remaining, paid: previous.paid + record.paid, uncertain: previous.uncertain || !!record.sharedReceipt?.needsReview }
+      : { due: record.paid + record.remaining, paid: record.paid, uncertain: !!record.sharedReceipt?.needsReview });
+    result.push(record);
+  };
+  // Preserve totals to the cent, including amounts not exactly divisible by the participant count.
+  const divide = (amount: number, count: number, index: number) => {
+    const cents = Math.round(amount * 100);
+    const base = Math.trunc(cents / count);
+    const remainder = cents - base * count;
+    return (base + (index < Math.abs(remainder) ? Math.sign(remainder) : 0)) / 100;
+  };
+  for (const record of ordered) {
+    if (record.sharedReceipt) { track(record); continue; }
+    const participants = splitPassportNames(record.passport);
+    if (participants.length < 2) { track({ ...record, passport: participants[0] ?? record.passport }); continue; }
+    const previous = participants.map((name) => balances.get(passportKey(name)));
+    const first = previous.every((balance) => !balance);
+    const existing = previous.every((balance) => balance !== undefined);
+    const remaining = previous.map((balance) => balance ? balance.due - balance.paid : 0);
+    const equalBalances = remaining.every((value) => Math.abs(value - (remaining[0] ?? 0)) < 0.005);
+    const totalBalance = remaining.reduce((total, amount) => total + amount, 0);
+    const consistentTotal = Math.abs(totalBalance - record.paid - record.remaining) < 0.015;
+    const needsReview = !first && !(existing && equalBalances && consistentTotal && previous.every((balance) => !balance?.uncertain));
+    participants.forEach((passport, index) => track({
+      ...record,
+      id: `${record.id}|person:${passportKey(passport)}`,
+      passport,
+      paid: needsReview ? 0 : divide(record.paid, participants.length, index),
+      remaining: needsReview ? remaining[index] ?? 0 : divide(record.remaining, participants.length, index),
+      sharedReceipt: {
+        sourceId: record.id, participants, originalPaid: record.paid,
+        originalRemaining: record.remaining, needsReview,
+      },
+    }));
+  }
+  return result;
+}
+
 /** Groups an agent's rows by passport and computes the cumulative real balance. */
 export function groupPassports(records: TxRecord[]): PassportAccount[] {
   const map = new Map<string, TxRecord[]>();
-  for (const r of records) {
+  for (const r of processSharedReceipts(records)) {
     const k = passportKey(r.passport) || r.passport;
     const list = map.get(k);
     if (list) list.push(r);
@@ -266,6 +341,7 @@ export type AgentSummary = {
   total: number;
   records: TxRecord[];
   accounts: PassportAccount[];
+  pendingPaid: number; // received on shared receipts but not assigned to individual passports
 };
 
 export function resolveAgent(raw: string, aliases: Record<string, string>): string {
@@ -284,7 +360,7 @@ export function summarize(records: TxRecord[], aliases: Record<string, string>):
     const name = resolveAgent(r.agentRaw, aliases);
     let s = map.get(name);
     if (!s) {
-      s = { name, aliases: [], passports: 0, paid: 0, remaining: 0, total: 0, records: [], accounts: [] };
+      s = { name, aliases: [], passports: 0, paid: 0, remaining: 0, total: 0, records: [], accounts: [], pendingPaid: 0 };
       map.set(name, s);
     }
     if (r.agentRaw !== name && !s.aliases.includes(r.agentRaw)) s.aliases.push(r.agentRaw);
@@ -293,8 +369,13 @@ export function summarize(records: TxRecord[], aliases: Record<string, string>):
   for (const s of map.values()) {
     s.accounts = groupPassports(s.records);
     s.passports = s.accounts.length;
-    s.paid = s.accounts.reduce((t, a) => t + a.paid, 0);
-    s.remaining = s.accounts.reduce((t, a) => t + a.remaining, 0);
+    const pending = new Map<string, number>();
+    for (const account of s.accounts) for (const record of account.records) {
+      if (record.sharedReceipt?.needsReview) pending.set(record.sharedReceipt.sourceId, record.sharedReceipt.originalPaid);
+    }
+    s.pendingPaid = [...pending.values()].reduce((total, amount) => total + amount, 0);
+    s.paid = s.accounts.reduce((t, a) => t + a.paid, 0) + s.pendingPaid;
+    s.remaining = s.accounts.reduce((t, a) => t + a.remaining, 0) - s.pendingPaid;
     s.total = s.paid + s.remaining;
   }
   return [...map.values()].sort((a, b) => b.remaining - a.remaining);

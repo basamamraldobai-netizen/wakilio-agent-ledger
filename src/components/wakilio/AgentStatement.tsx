@@ -30,7 +30,8 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
   const [q, setQ] = useState("");
   const term = q.trim().toLowerCase();
   const matches = (a: PassportAccount) => !term || a.name.toLowerCase().includes(term) || a.records.some((r) => [r.passport, r.receipt, r.profession, r.notes, r.status, r.destination].some((v) => String(v ?? "").toLowerCase().includes(term)));
-  const rows = agent.accounts.filter(FILTERS.find((f) => f.id === filter)!.test).filter(matches);
+  const activeFilter = FILTERS.find((f) => f.id === filter) ?? FILTERS[0];
+  const rows = agent.accounts.filter((account) => activeFilter?.test(account) ?? true).filter(matches);
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -88,7 +89,7 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
           <tbody>
             {rows.map((acc, i) => {
               const multi = acc.records.length > 1;
-              const last = acc.records[acc.records.length - 1]!;
+              const last = acc.records[acc.records.length - 1];
               return (
                 <tr key={acc.key} onClick={() => setOpen(acc)} className="group cursor-pointer border-t border-border transition-colors hover:bg-secondary/60">
                   <td className="num p-3 text-muted-foreground">{i + 1}</td>
@@ -99,10 +100,10 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
                       {acc.remaining < 0 && <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary ring-1 ring-inset ring-primary/30 print:hidden">فائض: <span className="num">{fmt(-acc.remaining)}</span></span>}
                     </div>
                   </td>
-                  <td className="whitespace-nowrap p-3 text-muted-foreground">{acc.records[0]!.profession}</td>
+                  <td className="whitespace-nowrap p-3 text-muted-foreground">{acc.records[0]?.profession}</td>
                   <td className="num p-3 text-primary">{fmt(acc.paid)}</td>
                   <td className="num whitespace-nowrap p-3 font-semibold text-destructive">{fmt(acc.remaining)}</td>
-                  <td className="p-3 text-muted-foreground">{[last.status, last.destination].filter(Boolean).join(" · ")}</td>
+                  <td className="p-3 text-muted-foreground">{[last?.status, last?.destination].filter(Boolean).join(" · ")}</td>
                   <td className="p-3 print:hidden"><Button size="icon" variant="ghost" aria-label={`تفاصيل ${acc.name}`} title="التفاصيل" onClick={(e) => { e.stopPropagation(); setOpen(acc); }} className="h-8 w-8 text-muted-foreground group-hover:text-primary"><ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" /></Button></td>
                 </tr>
               );
@@ -116,6 +117,7 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
               <td />
               <td className="print:hidden" />
             </tr>
+            {agent.pendingPaid !== 0 && <tr><td colSpan={7} className="p-3 text-xs font-normal text-muted-foreground">ضمن الواصل <span className="num">{fmt(agent.pendingPaid)}</span> من سندات مشتركة بانتظار مراجعة التوزيع؛ أرصدة الجوازات لا تشمل هذه الدفعات بعد.</td></tr>}
           </tfoot>
         </table>
       </div>
@@ -127,7 +129,7 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
               <>
                 <SheetHeader className="text-right">
                   <SheetTitle className="font-display">{open.name}</SheetTitle>
-                  <SheetDescription>سجل الدفعات ({open.records.length}) · {open.records[0]!.profession}</SheetDescription>
+                  <SheetDescription>سجل الدفعات ({open.records.length}) · {open.records[0]?.profession}</SheetDescription>
                 </SheetHeader>
                 <div className="mt-5 grid grid-cols-3 gap-2 text-center text-xs">
                   <div className="rounded-[11px] bg-secondary p-3"><div className="text-muted-foreground">المستحق</div><div className="num mt-1 font-bold">{fmt(open.due)}</div></div>
@@ -142,10 +144,17 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
                         <div className="flex items-center justify-between"><span className="font-bold">دفعة {j + 1}</span><span className="num text-xs text-muted-foreground">{r.date || "—"}</span></div>
                         <div className="mt-2 grid grid-cols-2 gap-1 text-xs text-muted-foreground">
                           <span>رقم السند: <span className="num text-foreground">{r.receipt || "—"}</span></span>
-                          <span>المبلغ: <span className="num font-semibold text-primary">{fmt(r.paid)}</span></span>
+                          <span>المبلغ: <span className="num font-semibold text-primary">{r.sharedReceipt?.needsReview ? "بانتظار التوزيع" : fmt(r.paid)}</span></span>
                           <span>الرصيد التراكمي: <span className="num font-semibold text-destructive">{fmt(open.due - paidSoFar)}</span></span>
-                          <span>المسجل بالملف: <span className="num">{fmt(r.remaining)}</span></span>
+                          <span>{r.sharedReceipt ? "المسجل للسند كاملاً" : "المسجل بالملف"}: <span className="num">{fmt(r.sharedReceipt?.originalRemaining ?? r.remaining)}</span></span>
                         </div>
+                        {r.sharedReceipt && <div className="mt-3 border-t border-border pt-2 text-xs text-muted-foreground">
+                          <div className="font-semibold text-accent">سند مشترك رقم <span className="num">{r.receipt || "غير مذكور"}</span> مع {r.sharedReceipt.participants.filter((name) => name !== r.passport).join(" و ")}</div>
+                          <div className="mt-1">إجمالي مبلغ السند: <span className="num">{fmt(r.sharedReceipt.originalPaid)}</span></div>
+                          {r.sharedReceipt.needsReview
+                            ? <div className="mt-2 flex items-start gap-2 rounded-lg bg-warning/10 p-2 text-warning"><AlertTriangle className="h-4 w-4 shrink-0" /><span>بحاجة لمراجعة التوزيع: الأرصدة السابقة غير متساوية أو غير مكتملة، أو إجمالي السند لا يطابقها. لم تُخصم هذه الدفعة من رصيد الجواز تجنباً لتوزيع غير مؤكد.</span></div>
+                            : <div className="mt-1">توزيع متساوٍ على <span className="num">{r.sharedReceipt.participants.length}</span> جوازات.</div>}
+                        </div>}
                         {(r.status || r.destination || r.notes) && <div className="mt-2 text-xs text-muted-foreground">{[r.status, r.destination, r.notes].filter(Boolean).join(" · ")}</div>}
                       </li>
                     );
