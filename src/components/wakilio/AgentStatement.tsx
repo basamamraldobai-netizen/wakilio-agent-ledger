@@ -28,6 +28,7 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
   const [open, setOpen] = useState<PassportAccount | null>(null);
   const [filter, setFilter] = useState<FilterId>("all");
   const [q, setQ] = useState("");
+  const [hoverReceipt, setHoverReceipt] = useState<string | null>(null);
   const term = q.trim().toLowerCase();
   const matches = (a: PassportAccount) => !term || a.name.toLowerCase().includes(term) || a.records.some((r) => [r.passport, r.receipt, r.profession, r.notes, r.status, r.destination].some((v) => String(v ?? "").toLowerCase().includes(term)));
   const activeFilter = FILTERS.find((f) => f.id === filter) ?? FILTERS[0];
@@ -90,13 +91,17 @@ export function AgentStatement({ agent, onBack, onUnmerge }: { agent: AgentSumma
             {rows.map((acc, i) => {
               const multi = acc.records.length > 1;
               const last = acc.records[acc.records.length - 1];
+              const shared = [...new Set(acc.records.filter((r) => r.sharedReceipt).map((r) => r.receipt || "—"))];
+              const isShared = shared.length > 0;
+              const linked = hoverReceipt !== null && shared.includes(hoverReceipt);
               return (
-                <tr key={acc.key} onClick={() => setOpen(acc)} className="group cursor-pointer border-t border-border transition-colors hover:bg-secondary/60">
+                <tr key={acc.key} onClick={() => setOpen(acc)} onMouseEnter={() => setHoverReceipt(shared[0] ?? null)} onMouseLeave={() => setHoverReceipt(null)} className={`group cursor-pointer border-t border-border transition-colors ${isShared ? "border-r-4 border-r-chart-3 bg-chart-3/10 hover:bg-chart-3/20" : "hover:bg-secondary/60"} ${linked ? "!bg-chart-3/25" : ""}`}>
                   <td className="num p-3 text-muted-foreground">{i + 1}</td>
                   <td className="p-3 font-medium">
                     <div className="flex w-max max-w-full flex-wrap items-center gap-x-2 gap-y-1">
                       <span className="min-w-0 break-words group-hover:text-primary">{acc.name}</span>
                       <span className={`shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset print:hidden ${multi ? "bg-accent/15 text-accent ring-accent/30" : "bg-warning/12 text-warning ring-warning/30"}`}>{multi ? `${acc.records.length} دفعات` : "دفعة واحدة"}</span>
+                      {shared.map((rc) => <span key={rc} className="shrink-0 whitespace-nowrap rounded-full bg-chart-3/20 px-2 py-0.5 text-[10px] font-semibold text-foreground ring-1 ring-inset ring-chart-3/50">سند مشترك <span className="num">{rc}</span></span>)}
                       {acc.remaining < 0 && <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary ring-1 ring-inset ring-primary/30 print:hidden">فائض: <span className="num">{fmt(-acc.remaining)}</span></span>}
                     </div>
                   </td>
