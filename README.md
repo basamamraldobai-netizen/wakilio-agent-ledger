@@ -1,14 +1,22 @@
-# Welcome to your Lovable project
+# Wakilio Agent Ledger
+
+اريد كبدايه التركيز على تطوير جزئيه مثل محرك استيراد ملف الاكسل ومطابقه وتحليل بيانات الوكلاء، مع تعيين مرن للأعمدة بحيث يتعامل مع ملفات مختلفة:
+1. ملفات تحتوي على عمود الوكيل ومبالغ المدفوع/الواصل والمتبقي والتعامل مع النصوص مثل "لاشي" كقيمة صفر.
+2. ملفات يكون اسم الوكيل فيها في الترويسة العلوية المدمجة (مثل ملف خالد عباس) وتطبيق الوكيل على كل الحركات.
+3. تفعيل صندوق الاقتراحات لمطابقة ودمج أسماء الوكلاء المتشابهة.
+4. عرض كشف حساب تفصيلي وملخص مالي لكل وكيل مع إجمالي الجوازات والواصل والمتبقي، وفق هوية وتصميم نظام WAKILIO المرفق.
 
 This project was built with [Lovable](https://lovable.dev).
 
+**Live app**: https://wakilio-agent-ledger.lovable.app
+
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/d864016a-556f-4ce2-9662-c9f5ef1e085b).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +28,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
